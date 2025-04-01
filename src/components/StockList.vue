@@ -83,11 +83,10 @@ const addStock = async () => {
   }
 
   try {
-    await axios.post('http://localhost:8080/api/stocks', null, {
-      params: {
-        name: newStockName.value,
-        price: newStockPrice.value
-      }
+    // 수정: params 대신 요청 본문으로 데이터 전송
+    await axios.post('http://localhost:8080/api/stocks', {
+      name: newStockName.value,
+      price: newStockPrice.value
     })
 
     alert('주식이 추가되었습니다!')
@@ -96,8 +95,13 @@ const addStock = async () => {
 
     emit('refresh')
   } catch (error) {
+    console.error('주식 추가 중 오류:', error)
+    
     if (error.response && error.response.status === 409) {
       alert('이미 존재하는 종목입니다.')
+    } else if (error.response?.data?.message) {
+      // ResponseDto 구조에 맞게 오류 메시지 확인
+      alert(`주식 추가 실패: ${error.response.data.message}`)
     } else {
       alert('주식 추가 중 오류가 발생했습니다.')
     }

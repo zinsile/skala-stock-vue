@@ -58,21 +58,22 @@ const newStockName = ref('')
 const newStockPrice = ref('')
 
 const loadData = async () => {
-  stocks.value = (await axios.get('http://localhost:8080/api/stocks')).data
-  players.value = (await axios.get('http://localhost:8080/api/players')).data
+  stocks.value = (await axios.get('http://localhost:8080/api/stocks')).data.data
+  players.value = (await axios.get('http://localhost:8080/api/players')).data.data
 }
 
 const handleBuy = async (player, stock, quantity) => {
   if (!playerId.value) return alert('먼저 플레이어 이름을 입력하세요')
   try {
-    await axios.post(`http://localhost:8080/api/players/${playerId.value}/buy`, null, {
-      params: { stockName: stock, quantity }
+    await axios.post(`http://localhost:8080/api/players/${playerId.value}/buy`, {
+      stockName: stock, 
+      quantity: quantity
     })
     alert('매수 성공!')
     await loadData()
   } catch (error) {
-    if (error.response?.data) {
-      alert(`매수 실패: ${error.response.data}`)
+    if (error.response?.data?.message) {
+      alert(`매수 실패: ${error.response.data.message}`)
     } else if (error.response?.status === 400) {
       alert('매수 실패: 자금이 부족합니다.')
     } else {
@@ -81,17 +82,19 @@ const handleBuy = async (player, stock, quantity) => {
   }
 }
 
+// 매도하기 함수
 const handleSell = async (stock, quantity) => {
   if (!playerId.value) return alert('먼저 플레이어 이름을 입력하세요')
   try {
-    await axios.post(`http://localhost:8080/api/players/${playerId.value}/sell`, null, {
-      params: { stockName: stock, quantity }
+    await axios.post(`http://localhost:8080/api/players/${playerId.value}/sell`, {
+      stockName: stock, 
+      quantity: quantity
     })
     alert('매도 성공!')
     await loadData()
   } catch (error) {
-    if (error.response?.data) {
-      alert(`매도 실패: ${error.response.data}`)
+    if (error.response?.data?.message) {
+      alert(`매도 실패: ${error.response.data.message}`)
     } else if (error.response?.status === 400) {
       alert('매도 실패: 보유한 주식이 부족합니다.')
     } else {
@@ -100,16 +103,24 @@ const handleSell = async (stock, quantity) => {
   }
 }
 
+// 로그인 함수
 const login = async () => {
   const name = inputPlayerId.value.trim()
   if (!name) return alert('플레이어 이름을 입력하세요')
 
   try {
-    await axios.get(`http://localhost:8080/api/players/${name}`)
-    playerId.value = name
-    alert(`${playerId.value}님 접속 완료!`)
-    await loadData()
-    inputPlayerId.value = ''
+    // GET 요청은 그대로 유지하되, 응답 처리 방식만 수정
+    const response = await axios.get(`http://localhost:8080/api/players/${name}`)
+    // 성공적으로 플레이어 정보를 받아왔는지 확인
+    if (response.data && response.data.status === 'success') {
+      playerId.value = name
+      alert(`${playerId.value}님 접속 완료!`)
+      await loadData()
+      inputPlayerId.value = ''
+    } else {
+      // 응답은 왔지만 status가 success가 아닌 경우
+      alert('플레이어 정보를 불러오는 중 문제가 발생했습니다.')
+    }
   } catch (error) {
     if (error.response && error.response.status === 404) {
       alert('⚠️ 등록되지 않은 플레이어입니다. 먼저 생성해주세요!')
@@ -119,6 +130,7 @@ const login = async () => {
   }
 }
 
+// 로그아웃 함수 - API 호출이 없어 그대로 유지
 const logout = () => {
   if (confirm(`${playerId.value}님, 정말 로그아웃 하시겠습니까?`)) {
     playerId.value = ''
@@ -126,6 +138,7 @@ const logout = () => {
   }
 }
 
+// 플레이어 생성 후 처리 함수 - API 호출이 없어 그대로 유지
 const handlePlayerCreated = (id) => {
   // 플레이어 생성 후 자동 로그인 (옵션)
   if (confirm(`${id} 플레이어로 자동 로그인하시겠습니까?`)) {
@@ -134,13 +147,15 @@ const handlePlayerCreated = (id) => {
   }
 }
 
+// 플레이어 생성 함수
 const createPlayer = async () => {
   const name = inputPlayerId.value.trim()
   if (!name) return alert('플레이어 이름을 입력하세요')
   
   try {
-    await axios.post('http://localhost:8080/api/players', null, {
-      params: { id: name }
+    // POST 요청 본문으로 데이터 전송
+    await axios.post('http://localhost:8080/api/players', {
+      id: name
     })
     playerId.value = name
     alert(`${name} 플레이어가 생성되었습니다!`)
@@ -155,30 +170,14 @@ const createPlayer = async () => {
   }
 }
 
-// const addStock = async () => {
-//   const name = newStockName.value.trim()
-//   const price = parseInt(newStockPrice.value)
+// 데이터 로드 함수 - 이미 수정되어 있으므로 참고용
+const loadDataReference = async () => {
+  // ResponseDto에서 data 필드를 추출하여 사용
+  stocks.value = (await axios.get('http://localhost:8080/api/stocks')).data.data
+  players.value = (await axios.get('http://localhost:8080/api/players')).data.data
+}
 
-//   if (!name) return alert('주식 이름을 입력하세요')
-//   if (!price || price <= 0) return alert('유효한 가격을 입력하세요')
-
-//   try {
-//     await axios.post('http://localhost:8080/api/stocks', null, {
-//       params: { name, price }
-//     })
-//     alert(`${name} 주식이 추가되었습니다!`)
-//     newStockName.value = ''
-//     newStockPrice.value = ''
-//     await loadData()
-//   } catch (error) {
-//     if (error.response && error.response.status === 409) {
-//       alert('⚠️ 이미 존재하는 주식입니다!')
-//     } else {
-//       alert('⚠️ 주식 추가 중 오류가 발생했습니다.')
-//     }
-//   }
-// }
-
+// 컴포넌트 마운트 시 데이터 로드
 onMounted(loadData)
 </script>
 

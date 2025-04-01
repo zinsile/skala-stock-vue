@@ -83,7 +83,7 @@ const removePlayer = async (playerId) => {
 
   if (confirm(`${playerId} 플레이어를 정말 탈퇴시키겠습니까?`)) {
     try {
-      // 수정: DELETE 메서드 사용 및 올바른 엔드포인트 적용
+      // DELETE 메서드는 그대로 유지 (변경 필요 없음)
       await axios.delete(`http://localhost:8080/api/players/${playerId}`)
       window.location.reload()
     } catch (error) {
@@ -105,15 +105,15 @@ const createPlayer = async () => {
   }
   
   try {
-    // 플레이어 생성 (서버에서 이미 기본 자금을 제공하는 경우 고려)
-    const response = await axios.post('http://localhost:8080/api/players', null, {
-      params: { id: name }
+    // 플레이어 생성 - params에서 요청 본문으로 변경
+    const response = await axios.post('http://localhost:8080/api/players', {
+      id: name
     })
     
     // 사용자가 추가 자금을 입력한 경우에만 추가 자금 투입
     if (money > 0 && money !== 10000) { // 10000이 서버에서 기본으로 제공하는 금액이라면
-      await axios.post(`http://localhost:8080/api/players/${name}/money`, null, {
-        params: { amount: money - 10000 } // 차이만큼만 추가
+      await axios.post(`http://localhost:8080/api/players/${name}/money`, {
+        amount: money - 10000 // 차이만큼만 추가
       })
     }
     
@@ -146,11 +146,9 @@ const openAddMoneyPrompt = async (playerId) => {
   }
 
   try {
-    // 수정: 올바른 엔드포인트와 파라미터 형식으로 변경
-    await axios.post(`http://localhost:8080/api/players/${playerId}/money`, null, {
-      params: {
-        amount: amount
-      }
+    // 자금 추가 - params에서 요청 본문으로 변경
+    await axios.post(`http://localhost:8080/api/players/${playerId}/money`, {
+      amount: amount
     })
 
     // ✅ player의 금액만 업데이트 (새로고침 없이)
@@ -161,10 +159,14 @@ const openAddMoneyPrompt = async (playerId) => {
 
     alert(`₩${amount.toLocaleString()} 이(가) 추가되었습니다!`)
   } catch (error) {
-    alert('투자금 추가 중 오류가 발생했습니다.')
+    console.error('투자금 추가 중 오류:', error);
+    if (error.response?.data?.message) {
+      alert(`투자금 추가 실패: ${error.response.data.message}`);
+    } else {
+      alert('투자금 추가 중 오류가 발생했습니다.');
+    }
   }
 }
-
 </script>
 
 <style scoped>
