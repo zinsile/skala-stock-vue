@@ -58,8 +58,6 @@ cd skala-stock-vue
 
 # 의존성 설치
 npm install
-# 또는
-yarn install
 ```
 
 ### 개발 서버 실행
@@ -76,8 +74,6 @@ yarn dev
 
 ```bash
 npm run build
-# 또는
-yarn build
 ```
 
 빌드된 파일은 `dist` 디렉토리에 생성됩니다.
